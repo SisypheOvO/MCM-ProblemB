@@ -1,0 +1,119 @@
+先验概率的具体数学模型在这个代码中使用了一个多元正态分布（Multivariate Normal Distribution）。让我们详细看一下先验概率的数学公式和相应的数学知识：
+
+\textbf{先验概率的数学模型}：
+
+在这里，先验概率使用了多元正态分布（也称为高斯分布）作为概率分布模型。多元正态分布是一个连续概率分布，由其均值向量 $\boldsymbol{\mu}_{\text{{prior}}}$ 和协方差矩阵 $\boldsymbol{\Sigma}_{\text{{prior}}}$ 完全描述。对于三维空间中的位置 $(x, y, z)$，先验概率可以用以下公式表示：
+
+\[
+\text{{Prior}}(\mathbf{x}, \mathbf{y}, \mathbf{z}) = \frac{1}{(2\pi)^{3/2} |\boldsymbol{\Sigma}_{\text{{prior}}}|^{1/2}} \exp \left( -\frac{1}{2} (\mathbf{x}, \mathbf{y}, \mathbf{z} - \boldsymbol{\mu}_{\text{{prior}}})^T \boldsymbol{\Sigma}_{\text{{prior}}}^{-1} (\mathbf{x}, \mathbf{y}, \mathbf{z} - \boldsymbol{\mu}_{\text{{prior}}}) \right)
+\]
+
+其中：
+- $\boldsymbol{\mu}_{\text{{prior}}}$ 是先验概率的均值向量，表示过去观测点的局部均值。
+- $\boldsymbol{\Sigma}_{\text{{prior}}}$ 是先验概率的协方差矩阵，通过标准差参数 \texttt{std\_prior} 生成。
+
+\textbf{数学知识解释}：
+
+1. \textbf{多元正态分布（Multivariate Normal Distribution）}：是多维空间中连续随机变量的概率分布。其概率密度函数具有上述形式，其中 $\boldsymbol{\mu}$ 是均值向量，$\boldsymbol{\Sigma}$ 是协方差矩阵。这个分布是高维空间中常用的概率分布之一，对于位置坐标的建模非常合适。
+
+2. \textbf{概率密度函数（Probability Density Function，PDF）}：在统计学中，概率密度函数描述了连续型随机变量落在某个区间内的概率。在这里，多元正态分布的概率密度函数被用作位置的先验概率，表示机器人可能存在的位置。
+
+3. \textbf{均值向量和协方差矩阵}：均值向量 $\boldsymbol{\mu}$ 表
+
+
+
+
+
+
+
+
+
+
+
+\textbf{似然函数的数学模型}：
+
+在这个代码中，似然函数使用了另一个多元正态分布作为概率分布模型。以下是似然函数的数学公式和相应的数学知识：
+
+\[
+\text{{Likelihood}}(x, y, z, \text{{observed\_position}}, \text{{std}}) = \frac{1}{(2\pi)^{3/2} |\Sigma|^{{1/2}}} \exp \left( -\frac{1}{2} (x, y, z - \boldsymbol{\mu})^T \Sigma^{-1} (x, y, z - \boldsymbol{\mu}) \right)
+\]
+
+其中：
+- $\text{{observed\_position}}[:3]$ 是观测到的位置坐标的均值向量 $\boldsymbol{\mu}$。
+- $\Sigma$ 是协方差矩阵，通过标准差参数 \text{{std}} 生成。
+
+\textbf{数学知识解释}：
+
+1. \textbf{多元正态分布（Multivariate Normal Distribution）}：同样在这里用作似然函数的概率分布模型。它描述了给定均值和协方差的多维空间中连续随机变量的分布。
+
+2. \textbf{观测到的位置坐标}：在机器人定位问题中，似然函数考虑了当前观测到的位置坐标，即机器人传感器测量得到的位置信息。
+
+3. \textbf{概率密度函数（Probability Density Function，PDF）}：似然函数的概率密度函数描述了在给定观测值条件下模型参数的可能性。在这里，它衡量了给定观测位置的情况下机器人实际位置的可能性。
+
+
+
+
+
+
+
+
+
+
+
+\textbf{后验概率的数学模型}：
+
+在这个代码中，后验概率的数学模型使用了贝叶斯定理，结合先验概率和似然函数。以下是后验概率的数学公式和相关的数学知识：
+
+\[
+\text{{Posterior}}(x, y, z) \propto \text{{Prior}}(x, y, z) \times \text{{Likelihood}}(x, y, z)
+\]
+
+其中：
+- $\text{{Prior}}(x, y, z)$ 是先验概率，描述了未考虑观测数据时位置 $(x, y, z)$ 的可能性。
+- $\text{{Likelihood}}(x, y, z)$ 是似然函数，描述了在给定观测数据的情况下模型参数 $(x, y, z)$ 的可能性。
+
+\textbf{数学知识解释}：
+
+1. \textbf{贝叶斯定理（Bayes' Theorem）}：描述了在观测到新数据后，我们如何更新先验概率以获得后验概率的过程。公式中的 $\propto$ 表示“与成正比”。
+
+2. \textbf{后验概率}：表示在考虑观测数据后，对模型参数的新估计。它是先验概率和似然函数的乘积，经过归一化后得到。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+搜索策略：通过迭代寻找概率最高的位置。在每次迭代中，随机生成一个可能的下一个位置，并计算该位置的后验概率。然后，根据一定规则更新机器人的当前位置，直到满足停止条件（概率低于阈值）。
+
+随机移动：在每次迭代中，通过生成一个随机移动向量，将当前位置进行随机扰动，以增加搜索的多样性。
+
+概率累积：通过在每次迭代中累积概率，可以观察到概率随着迭代次数逐渐累积，直至满足停止条件。
+
+终止条件：当概率累积低于设定的阈值时，停止搜索。

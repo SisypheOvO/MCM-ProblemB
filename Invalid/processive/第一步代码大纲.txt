@@ -1,0 +1,83 @@
+import numpy as np
+
+def calculate_density(depth, temperature=10):
+    """
+    根据深度和温度计算海水密度
+
+    参数：
+    depth: 水深
+    temperature: 水温，默认为10摄氏度
+
+    返回：
+    海水密度
+    """
+    # 这里可以根据实际情况添加计算密度的公式
+    # 在这里，我们简单地使用一个示例值
+    return 1025  # 以 kg/m³ 为单位的示例密度
+
+def calculate_drag_force(velocity, water_density, drag_coefficient=0.47, reference_area=1):
+    """
+    计算海水阻力
+
+    参数：
+    velocity: 当前速度 [vx, vy, vz]
+    water_density: 海水密度
+    drag_coefficient: 阻力系数，默认为典型值
+    reference_area: 参考面积，默认为1
+
+    返回：
+    海水阻力 [Fx, Fy, Fz]
+    """
+    speed = np.linalg.norm(velocity)  # 计算速度的大小
+    drag_force_magnitude = 0.5 * drag_coefficient * reference_area * water_density * speed**2
+    drag_force_direction = -velocity / speed  # 阻力方向与速度相反
+    drag_force = drag_force_magnitude * drag_force_direction
+    return drag_force
+
+def predict_position_with_environment(current_position, velocity, acceleration, delta_time, water_depth, temperature=10):
+    """
+    考虑洋流、海水阻力、科里奥利力、海底地形的位置预测
+
+    参数：
+    current_position: 当前位置 [x, y, z]
+    velocity: 当前速度 [vx, vy, vz]
+    acceleration: 当前加速度 [ax, ay, az]
+    delta_time: 时间步长
+    water_depth: 水深
+    temperature: 水温，默认为10摄氏度
+
+    返回：
+    新的位置 [x_new, y_new, z_new]
+    """
+
+    # 解析输入参数
+    x, y, z = current_position
+    vx, vy, vz = velocity
+    ax, ay, az = acceleration
+
+    # 如果当前位置在或接近海底，或者接下来一段时间可能撞到海底，将 z 方向速度和加速度设为0
+    if z <= 0 or z + vz * delta_time <= 0:
+        vz, az = 0, 0
+
+    # 如果接下来一段时间位置有较高概率到达中性浮力点，将 z 方向速度和加速度设为0
+    # 这里可以根据具体情况添加判断条件
+    if z + vz * delta_time >= neutral_buoyancy_depth:
+        vz, az = 0, 0
+
+    # 计算海水密度
+    water_density = calculate_density(water_depth, temperature)
+
+    # 计算海水阻力
+    drag_force = calculate_drag_force(velocity, water_density)
+
+    # 更新速度，考虑海水阻力
+    vx_new = vx + (ax + drag_force[0]) * delta_time
+    vy_new = vy + (ay + drag_force[1]) * delta_time
+    vz_new = vz + (az + drag_force[2]) * delta_time
+
+    # 更新位置，考虑海水阻力
+    x_new = x + vx * delta_time + 0.5 * (ax + drag_force[0]) * delta_time**2
+    y_new = y + vy * delta_time + 0.5 * (ay + drag_force[1]) * delta_time**2
+    z_new = z + vz * delta_time + 0.5 * (az + drag_force[2]) * delta_time**2
+
+    return [x_new, y_new, z_new]
