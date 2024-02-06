@@ -1,0 +1,81 @@
+import numpy as np
+
+def calculate_density(depth, temperature=10):
+    """
+    根据深度和温度计算海水密度
+
+    参数：
+    depth: 水深
+    temperature: 水温，默认为10摄氏度
+
+    返回：
+    海水密度
+    """
+    # 这里可以根据实际情况添加计算密度的公式
+    # 在这里，我们简单地使用一个示例值
+    return 1025  # 以 kg/m³ 为单位的示例密度
+
+def calculate_drag_force(velocity, water_density, drag_coefficient=0.47, reference_area=1):
+    """
+    计算海水阻力
+
+    参数：
+    velocity: 当前速度 [vx, vy, vz]
+    water_density: 海水密度
+    drag_coefficient: 阻力系数，默认为典型值
+    reference_area: 参考面积，默认为1
+
+    返回：
+    海水阻力 [Fx, Fy, Fz]
+    """
+    speed = np.linalg.norm(velocity)  # 计算速度的大小
+    drag_force_magnitude = 0.5 * drag_coefficient * reference_area * water_density * speed**2
+    drag_force_direction = -velocity / speed  # 阻力方向与速度相反
+    drag_force = drag_force_magnitude * drag_force_direction
+    return drag_force
+
+def update_state(current_state, acceleration, delta_time, water_depth, temperature=10, noise_std=0.01):
+    """
+    更新状态（速度和位置），考虑洋流、海水阻力、科里奥利力、海底地形和高斯噪声
+
+    参数：
+    current_state: 当前状态 [x, y, z, vx, vy, vz]
+    acceleration: 当前加速度 [ax, ay, az]
+    delta_time: 时间步长
+    water_depth: 水深
+    temperature: 水温，默认为10摄氏度
+    noise_std: 高斯噪声的标准差，默认为0.01
+
+    返回：
+    新的状态 [x_new, y_new, z_new, vx_new, vy_new, vz_new]
+    """
+
+    # 解析当前状态
+    x, y, z, vx, vy, vz = current_state
+
+    # 如果当前位置在或接近海底，或者接下来一段时间可能撞到海底，将 z 方向速度和加速度设为0
+    if z <= 0 or z + vz * delta_time <= 0:
+        vz, acceleration[2] = 0, 0
+
+    # 如果接下来一段时间位置有较高概率到达中性浮力点，将 z 方向速度和加速度设为0
+    # 这里可以根据具体情况添加判断条件
+    if z + vz * delta_time >= neutral_buoyancy_depth:
+        vz, acceleration[2] = 0, 0
+
+    # 计算海水密度
+    water_density = calculate_density(water_depth, temperature)
+
+    # 计算海水阻力
+    drag_force = calculate_drag_force([vx, vy, vz], water_density)
+
+    # 更新速度，考虑海水阻力
+    vx_new = vx + (acceleration[0] + drag_force[0]) * delta_time + np.random.normal(0, noise_std)
+    vy_new = vy + (acceleration[1] + drag_force[1]) * delta_time + np.random.normal(0, noise_std)
+    vz_new = vz + (acceleration[2] + drag_force[2]) * delta_time + np.random.normal(0, noise_std)
+
+    # 更新位置，考虑海水阻力
+    x_new = x + vx * delta_time + 0.5 * (acceleration[0] + drag_force[0]) * delta_time**2
+    y_new = y + vy * delta_time + 0.5 * (acceleration[1] + drag_force[1]) * delta_time**2
+    z_new = z + vz * delta_time + 0.5 * (acceleration[2] + drag_force[2]) * delta_time**2
+
+    return [x_new, y_new, z_new, vx_new, vy_new, vz_new]
